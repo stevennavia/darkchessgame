@@ -99,7 +99,7 @@ input:-webkit-autofill:focus {
 }
 
 .coord-label {
-  width: 84px;
+  width: 88px;
   text-align: center;
   font-size: 11px;
   color: #4a4a5a;
@@ -108,7 +108,7 @@ input:-webkit-autofill:focus {
 }
 
 .coord-label.rank {
-  width: 20px;
+  width: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,7 +121,7 @@ input:-webkit-autofill:focus {
 }
 
 .ranks-column .coord-label.rank {
-  height: 84px;
+  height: 88px;
 }
 
 .ranks-right {
@@ -136,8 +136,8 @@ input:-webkit-autofill:focus {
 
 .chess-board {
   display: grid;
-  grid-template-columns: repeat(8, 84px);
-  grid-template-rows: repeat(8, 84px);
+  grid-template-columns: repeat(8, 88px);
+  grid-template-rows: repeat(8, 88px);
   border: 3px solid #1a1a2a;
   box-shadow:
     0 0 40px rgba(0, 0, 0, 0.9),
@@ -147,8 +147,8 @@ input:-webkit-autofill:focus {
 }
 
 .square {
-  width: 84px;
-  height: 84px;
+  width: 88px;
+  height: 88px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -200,8 +200,8 @@ input:-webkit-autofill:focus {
 
 /* ===== PIECES ===== */
 .chess-piece {
-  width: 72px;
-  height: 72px;
+  width: 82px;
+  height: 82px;
   image-rendering: auto;
   transition: transform 0.12s ease, filter 0.12s ease;
   filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8));
@@ -215,13 +215,13 @@ input:-webkit-autofill:focus {
 }
 
 .chess-piece canvas {
-  width: 72px;
-  height: 72px;
+  width: 82px;
+  height: 82px;
 }
 
 .move-indicator {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: radial-gradient(circle, rgba(201, 168, 76, 0.5) 0%, transparent 70%);
   border-radius: 50%;
   z-index: 5;
@@ -251,7 +251,7 @@ input:-webkit-autofill:focus {
   position: fixed;
   inset: 0;
   z-index: 50;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .lobby-bg-overlay {
@@ -277,24 +277,28 @@ input:-webkit-autofill:focus {
 .lobby-content {
   position: relative;
   z-index: 10;
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 16px 20px;
 }
 
 .lobby-logo-wrapper {
   text-align: center;
-  margin-bottom: 36px;
-  padding: 0 20px;
+  margin-bottom: 8px;
+  padding: 0 10px;
+  max-height: 48vh;
+  display: flex;
+  align-items: center;
 }
 
 .lobby-logo {
-  max-width: 420px;
-  width: 100%;
-  height: auto;
+  max-width: 800px;
+  max-height: 48vh;
+  width: auto;
+  height: 100%;
   filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.9)) drop-shadow(0 0 60px rgba(201, 168, 76, 0.15));
 }
 
@@ -302,31 +306,31 @@ input:-webkit-autofill:focus {
   background: rgba(8, 8, 16, 0.88);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(42, 42, 58, 0.6);
-  border-radius: 14px;
-  padding: 32px;
+  border-radius: 10px;
+  padding: 12px 20px;
   width: 100%;
-  max-width: 440px;
+  max-width: 380px;
   box-shadow:
     0 20px 60px rgba(0, 0, 0, 0.6),
     inset 0 1px 0 rgba(201, 168, 76, 0.05);
 }
 
 .input-group {
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .input-group label {
   display: block;
-  font-size: 10px;
+  font-size: 9px;
   color: #6a6a7a;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   text-transform: uppercase;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
 }
 
 .input-group input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 8px 12px;
   background: rgba(10, 10, 18, 0.8);
   border: 1px solid #2a2a3a;
   border-radius: 8px;
@@ -344,8 +348,8 @@ input:-webkit-autofill:focus {
 .section-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .section-line {
@@ -359,26 +363,26 @@ input:-webkit-autofill:focus {
 }
 
 .section-title {
-  font-size: 11px;
+  font-size: 10px;
   color: #5a5a6a;
-  letter-spacing: 4px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .section-title.gold {
   color: rgba(201, 168, 76, 0.7);
-  letter-spacing: 3px;
+  letter-spacing: 2px;
 }
 
 /* ===== SOLO SECTION ===== */
 .section-solo {
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 
 .difficulty-selector {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .difficulty-trigger {
@@ -386,7 +390,7 @@ input:-webkit-autofill:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: 6px 12px;
   background: rgba(10, 10, 18, 0.8);
   border: 1px solid #2a2a3a;
   border-radius: 8px;
@@ -426,7 +430,7 @@ input:-webkit-autofill:focus {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 10px 16px;
+  padding: 6px 12px;
   background: transparent;
   border: none;
   border-bottom: 1px solid rgba(42, 42, 58, 0.3);
@@ -464,17 +468,17 @@ input:-webkit-autofill:focus {
 .btn-face-darkness {
   position: relative;
   width: 100%;
-  padding: 16px 12px;
+  padding: 8px 12px;
   background: linear-gradient(135deg, rgba(120, 0, 0, 0.25) 0%, rgba(60, 0, 0, 0.35) 100%);
   border: 1px solid rgba(139, 0, 0, 0.4);
-  border-radius: 10px;
+  border-radius: 6px;
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 
 .btn-face-darkness::before {
@@ -511,14 +515,14 @@ input:-webkit-autofill:focus {
 
 .btn-fd-text {
   font-family: 'UnifrakturMaguntia', serif;
-  font-size: 16px;
+  font-size: 12px;
   color: #c9a84c;
-  letter-spacing: 4px;
+  letter-spacing: 2px;
   text-shadow: 0 0 15px rgba(201, 168, 76, 0.3);
 }
 
 .btn-fd-sub {
-  font-size: 8px;
+  font-size: 6px;
   color: rgba(160, 160, 176, 0.5);
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -531,8 +535,8 @@ input:-webkit-autofill:focus {
 
 .mp-buttons {
   display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .btn-mp {
@@ -540,9 +544,9 @@ input:-webkit-autofill:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 16px 12px;
-  border-radius: 10px;
+  gap: 2px;
+  padding: 8px 8px;
+  border-radius: 8px;
   font-family: 'Cinzel', serif;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -575,19 +579,19 @@ input:-webkit-autofill:focus {
 }
 
 .mp-icon {
-  font-size: 22px;
+  font-size: 16px;
   line-height: 1;
 }
 
 .mp-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #c0c0c0;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
 .mp-desc {
-  font-size: 9px;
+  font-size: 8px;
   color: #5a5a6a;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -595,12 +599,12 @@ input:-webkit-autofill:focus {
 
 .join-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .join-row input {
   flex: 1;
-  padding: 11px 14px;
+  padding: 9px 12px;
   background: rgba(10, 10, 18, 0.8);
   border: 1px solid #2a2a3a;
   border-radius: 8px;
@@ -698,8 +702,8 @@ input:-webkit-autofill:focus {
 
 .lobby-footer {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
+  bottom: 12px;
+  right: 12px;
   z-index: 60;
 }
 
@@ -708,11 +712,11 @@ input:-webkit-autofill:focus {
   backdrop-filter: blur(8px);
   border: 1px solid rgba(42, 42, 58, 0.5);
   color: #8a8a9a;
-  padding: 10px 20px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  border-radius: 16px;
   cursor: pointer;
   font-family: 'Cinzel', serif;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 1px;
   transition: all 0.3s ease;
 }
@@ -1091,17 +1095,33 @@ input:-webkit-autofill:focus {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 640px) {
-  .chess-board { grid-template-columns: repeat(8, 48px); grid-template-rows: repeat(8, 48px); }
-  .square { width: 48px; height: 48px; }
-  .coord-label { width: 48px; font-size: 9px; }
+  .chess-board { grid-template-columns: repeat(8, 52px); grid-template-rows: repeat(8, 52px); }
+  .square { width: 52px; height: 52px; }
+  .coord-label { width: 52px; font-size: 9px; }
   .coord-label.rank { width: 16px; }
-  .ranks-column .coord-label.rank { height: 48px; }
-  .chess-piece { width: 40px; height: 40px; }
-  .chess-piece canvas { width: 40px; height: 40px; }
+  .ranks-column .coord-label.rank { height: 52px; }
+  .chess-piece { width: 48px; height: 48px; }
+  .chess-piece canvas { width: 48px; height: 48px; }
   .file-spacer { width: 16px; height: 16px; }
-  .lobby-card { padding: 20px; }
-  .lobby-logo { max-width: 280px; }
-  .btn-fd-text { font-size: 14px; letter-spacing: 3px; }
-  .mp-buttons { flex-direction: column; }
+  .lobby-logo-wrapper { max-height: 35vh; margin-bottom: 4px; }
+  .lobby-logo { max-width: 90vw; max-height: 35vh; }
+  .lobby-content { padding: 8px 10px; }
+  .lobby-card { padding: 10px 14px; max-width: 100%; }
+  .input-group { margin-bottom: 6px; }
+  .input-group input { padding: 6px 10px; font-size: 12px; }
+  .btn-fd-text { font-size: 11px; letter-spacing: 2px; }
+  .mp-buttons { flex-direction: column; gap: 4px; }
+  .btn-mp { padding: 6px 8px; }
+  .mp-icon { font-size: 14px; }
   .left-panel { display: none; }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .chess-board { grid-template-columns: repeat(8, 64px); grid-template-rows: repeat(8, 64px); }
+  .square { width: 64px; height: 64px; }
+  .coord-label { width: 64px; font-size: 10px; }
+  .coord-label.rank { width: 18px; }
+  .ranks-column .coord-label.rank { height: 64px; }
+  .chess-piece { width: 58px; height: 58px; }
+  .chess-piece canvas { width: 58px; height: 58px; }
 }

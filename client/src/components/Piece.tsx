@@ -181,7 +181,7 @@ export function Piece({ type, color, isSelected }: PieceProps) {
   const className = `chess-piece ${isSelected ? "selected" : ""}`;
 
   if (useFallback) {
-    return <canvas ref={canvasRef} width={80} height={80} className={className} />;
+    return <canvas ref={canvasRef} width={92} height={92} className={className} />;
   }
 
   return (

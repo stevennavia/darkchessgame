@@ -104,17 +104,21 @@ export function Lobby({ onGameStart }: LobbyProps) {
   };
 
   const handleAIGame = () => {
+    const isPlayerWhite = Math.random() < 0.5;
+    const playerColor = isPlayerWhite ? PlayerColor.WHITE : PlayerColor.BLACK;
+    const aiColor = isPlayerWhite ? PlayerColor.BLACK : PlayerColor.WHITE;
+
     useGameStore.setState({
       isAIGame: true,
       aiDifficulty,
       myId: "ai_player_local",
-      myColor: PlayerColor.WHITE,
+      myColor: playerColor,
       phase: GamePhase.PLAYING,
       fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
       turn: PlayerColor.WHITE,
       players: [
-        { id: "ai_player_local", color: PlayerColor.WHITE, name: playerName || "Player", connected: true },
-        { id: "ai_bot", color: PlayerColor.BLACK, name: "AI Bot", connected: true },
+        { id: "ai_player_local", color: playerColor, name: playerName || "Player", connected: true },
+        { id: "ai_bot", color: aiColor, name: "AI Bot", connected: true },
       ],
       gameStarted: true,
       opponentName: "AI Bot",

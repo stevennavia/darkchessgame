@@ -37,9 +37,10 @@ export function GameCanvas() {
   }, []);
 
   useEffect(() => {
-    if (!isAIGame || turn !== PlayerColor.BLACK) return;
-    const p = useGameStore.getState().phase;
-    if (p === "checkmate" || p === "stalemate" || p === "draw") return;
+    if (!isAIGame) return;
+    const state = useGameStore.getState();
+    if (state.turn === state.myColor) return;
+    if (state.phase === "checkmate" || state.phase === "stalemate" || state.phase === "draw") return;
     triggerAIMove();
   }, [turn, isAIGame]);
 
@@ -146,7 +147,6 @@ export function GameCanvas() {
     if (state.phase === "waiting" || state.phase === "checkmate" ||
         state.phase === "stalemate" || state.phase === "draw" || state.phase === "abandoned") return;
     if (state.isAIThinking || processingRef.current) return;
-    if (state.isAIGame && state.myColor !== PlayerColor.WHITE) return;
     if (state.turn !== state.myColor) return;
 
     const pieces = fenToPieces(state.fen);

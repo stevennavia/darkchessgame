@@ -42,7 +42,7 @@ function CapturedDisplay({ pieces }: { pieces: string[] }) {
   );
 }
 
-export function GameUI() {
+export function GameUI({ onBackToMenu }: { onBackToMenu?: () => void }) {
   const {
     phase, turn, myColor, winner, moves, lastMoveSan,
     playerName, opponentName, isAIGame, isCheck,
@@ -75,6 +75,7 @@ export function GameUI() {
   const handleBackToMenu = () => {
     multiplayer.disconnect();
     reset();
+    onBackToMenu?.();
   };
 
   const handleCopyRoomId = () => {

@@ -17,7 +17,7 @@ export function useAudio() {
     if (!musicRef.current) {
       musicRef.current = new Audio(SOUND_FILES.firesound);
       musicRef.current.loop = true;
-      musicRef.current.volume = 0.3;
+      musicRef.current.volume = 0.6;
     }
     return () => {
       musicRef.current?.pause();
