@@ -1,18 +1,62 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { multiplayer } from "@/network/multiplayer";
-import { GamePhase, PlayerColor } from "@/types";
-import { TurnIndicator } from "./TurnIndicator";
+import { GamePhase, PlayerColor, MoveRecord } from "@/types";
+
+const PIECE_ICONS: Record<string, string> = {
+  p: "♟", n: "♞", b: "♝", r: "♜", q: "♛", k: "♚",
+  P: "♙", N: "♘", B: "♗", R: "♖", Q: "♕", K: "♔",
+};
+
+function formatTime(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+function getCaptured(moves: MoveRecord[]): { white: string[]; black: string[] } {
+  const white: string[] = [];
+  const black: string[] = [];
+  for (const m of moves) {
+    if (!m.captured) continue;
+    const isWhite = m.captured === m.captured.toUpperCase();
+    if (isWhite) white.push(m.captured.toUpperCase());
+    else black.push(m.captured.toUpperCase());
+  }
+  return { white, black };
+}
+
+const ORDER = ["Q", "R", "B", "N", "P"];
+
+function CapturedDisplay({ pieces }: { pieces: string[] }) {
+  const sorted = [...pieces].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  return (
+    <div className="captured-row">
+      {sorted.map((p, i) => (
+        <span key={i} className="captured-icon">{PIECE_ICONS[p] || "?"}</span>
+      ))}
+    </div>
+  );
+}
 
 export function GameUI() {
   const {
     phase, turn, myColor, winner, moves, lastMoveSan,
-    opponentName, playerName, showDrawOffer, drawOfferedBy,
-    setDrawOffer, isAIGame, gameStarted, reset, roomId, setRoomId,
-    setMyInfo, setConnectionStatus, connectionStatus,
+    playerName, opponentName, isAIGame, isCheck,
+    showDrawOffer, drawOfferedBy,
+    setDrawOffer, gameStarted, reset, startTime,
   } = useGameStore();
+
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    if (!gameStarted) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [gameStarted]);
 
   const isGameOver = [
     GamePhase.CHECKMATE, GamePhase.STALEMATE, GamePhase.DRAW,
@@ -38,34 +82,26 @@ export function GameUI() {
     if (rid) navigator.clipboard.writeText(rid);
   };
 
-  const handleOfferDraw = () => {
-    multiplayer.offerDraw();
-  };
+  const handleOfferDraw = () => { multiplayer.offerDraw(); };
+  const handleResign = () => { multiplayer.resign(); };
 
-  const handleResign = () => {
-    multiplayer.resign();
-  };
+  const captured = getCaptured(moves);
+  const elapsed = startTime > 0 ? now - startTime : 0;
+  const isPlaying = phase === GamePhase.PLAYING || phase === GamePhase.CHECK;
 
   if (!gameStarted) return null;
 
   return (
     <div className="game-ui-overlay">
       <div className="top-bar">
-        <div className="top-left">
-          <TurnIndicator />
-        </div>
         <div className="top-right">
           {!isAIGame && multiplayer.getRoomId() && (
             <>
-              <button onClick={handleCopyRoomId} className="ui-btn copy-btn" title="Copy room code">
+              <button onClick={handleCopyRoomId} className="ui-btn copy-btn">
                 {multiplayer.getRoomId()?.slice(0, 6)}...
               </button>
-              <button onClick={handleOfferDraw} className="ui-btn draw-btn" title="Offer draw">
-                Draw
-              </button>
-              <button onClick={handleResign} className="ui-btn resign-btn" title="Resign">
-                Resign
-              </button>
+              <button onClick={handleOfferDraw} className="ui-btn draw-btn">Draw</button>
+              <button onClick={handleResign} className="ui-btn resign-btn">Resign</button>
             </>
           )}
         </div>
@@ -76,35 +112,71 @@ export function GameUI() {
           <div className="draw-dialog-box">
             <p className="draw-text">{drawOfferedBy} offers a draw</p>
             <div className="draw-buttons">
-              <button
-                onClick={() => { multiplayer.respondToDraw(true); setDrawOffer(false); }}
-                className="ui-btn draw-accept"
-              >Accept</button>
-              <button
-                onClick={() => { multiplayer.respondToDraw(false); setDrawOffer(false); }}
-                className="ui-btn draw-decline"
-              >Decline</button>
+              <button onClick={() => { multiplayer.respondToDraw(true); setDrawOffer(false); }} className="ui-btn draw-accept">Accept</button>
+              <button onClick={() => { multiplayer.respondToDraw(false); setDrawOffer(false); }} className="ui-btn draw-decline">Decline</button>
             </div>
           </div>
         </div>
       )}
 
+      <div className="left-panel">
+        <div className={`lp-player ${turn === PlayerColor.WHITE && isPlaying ? "active" : ""}`}>
+          <div className="lp-dot white" />
+          <span className="lp-name">{playerName || "White"}</span>
+          {turn === PlayerColor.WHITE && isPlaying && <span className="lp-arrow">◄</span>}
+        </div>
+
+        <div className="lp-vs">
+          {isCheck && isPlaying ? <span className="lp-check">CHECK</span> : <span className="lp-vs-text">VS</span>}
+        </div>
+
+        <div className={`lp-player ${turn === PlayerColor.BLACK && isPlaying ? "active" : ""}`}>
+          {turn === PlayerColor.BLACK && isPlaying && <span className="lp-arrow">►</span>}
+          <span className="lp-name">{isAIGame ? "AI Bot" : opponentName || "Black"}</span>
+          <div className="lp-dot black" />
+        </div>
+
+        <div className="lp-divider" />
+
+        <div className="lp-section">
+          <span className="lp-section-title">Captured</span>
+          {captured.black.length > 0 && (
+            <div className="lp-captured-group">
+              <span className="lp-captured-label">W</span>
+              <CapturedDisplay pieces={captured.black} />
+            </div>
+          )}
+          {captured.white.length > 0 && (
+            <div className="lp-captured-group">
+              <span className="lp-captured-label">B</span>
+              <CapturedDisplay pieces={captured.white} />
+            </div>
+          )}
+          {captured.white.length === 0 && captured.black.length === 0 && (
+            <span className="lp-empty">—</span>
+          )}
+        </div>
+
+        <div className="lp-divider" />
+
+        <div className="lp-section">
+          <span className="lp-section-title">Time</span>
+          <span className="lp-timer">{formatTime(elapsed)}</span>
+        </div>
+      </div>
+
       <div className="bottom-bar">
         <div className="bottom-info">
-          <div className="turn-info">
-            <div className={`turn-dot ${turn === PlayerColor.WHITE ? "white-turn" : "black-turn"}`} />
-            <span className="turn-label">{turn === myColor ? "Your turn" : "Opponent's turn"}</span>
-          </div>
-          {lastMoveSan && (
-            <>
-              <div className="info-separator" />
-              <span className="move-san">{lastMoveSan}</span>
-            </>
-          )}
-          <div className="info-separator" />
+          {lastMoveSan && <span className="move-san">{lastMoveSan}</span>}
+          {lastMoveSan && <div className="info-sep" />}
           <span className="move-count">Move {Math.ceil(moves.length / 2)}</span>
-          {isAIGame && phase === GamePhase.CHECK && (
-            <span className="check-indicator">CHECK</span>
+          <div className="info-sep" />
+          <span className="game-timer">{formatTime(elapsed)}</span>
+          {isAIGame && isCheck && isPlaying && (
+            <>
+              <div className="info-sep" />
+              <span className="check-badge">CHECK</span>
+            </>
           )}
         </div>
       </div>
@@ -120,14 +192,11 @@ export function GameUI() {
                 ? (winner === myColor ? "The kingdom prevails" : "Darkness consumes all")
                 : "The ritual ends"}
             </p>
+            <p className="result-time">{formatTime(elapsed)}</p>
             {!isAIGame && phase !== GamePhase.ABANDONED && (
-              <button onClick={() => multiplayer.requestRematch()} className="ui-btn rematch-btn">
-                Request Rematch
-              </button>
+              <button onClick={() => multiplayer.requestRematch()} className="ui-btn rematch-btn">Request Rematch</button>
             )}
-            <button onClick={handleBackToMenu} className="ui-btn menu-btn">
-              Back to Menu
-            </button>
+            <button onClick={handleBackToMenu} className="ui-btn menu-btn">Back to Menu</button>
           </div>
         </div>
       )}

@@ -17,6 +17,7 @@ interface GameStore {
   isCheck: boolean;
   lastMoveSan: string;
   gameStarted: boolean;
+  startTime: number;
   playerName: string;
   opponentName: string;
   showDrawOffer: boolean;
@@ -56,6 +57,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   isCheck: false,
   lastMoveSan: "",
   gameStarted: false,
+  startTime: 0,
   playerName: "",
   opponentName: "",
   showDrawOffer: false,
@@ -107,6 +109,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isCheck: check,
       selectedSquare: null,
       validMoves: [],
+      startTime: state.startTime === 0 ? Date.now() : state.startTime,
     })),
 
   setGameOver: (winner, reason, moves) =>
@@ -139,6 +142,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       isCheck: false,
       lastMoveSan: "",
       gameStarted: false,
+      startTime: 0,
       winner: undefined,
       showDrawOffer: false,
       drawOfferedBy: "",

@@ -12,11 +12,11 @@ interface BoardProps {
 }
 
 export function Board({ onSquareClick, bloodSquares = [] }: BoardProps) {
-  const { fen, selectedSquare, validMoves, lastMove, turn, myColor, phase, isAIGame, isAIThinking } = useGameStore();
+  const { fen, selectedSquare, validMoves, lastMove, turn, myColor, phase, isAIGame } = useGameStore();
 
   const pieces = useMemo(() => fenToPieces(fen), [fen]);
 
-  const canInteract = (phase === "playing" || phase === "check") && !(isAIGame && turn !== myColor) && !isAIThinking;
+  const canInteract = (phase === "playing" || phase === "check") && !(isAIGame && turn !== myColor);
 
   const fileLabel = (col: number) => String.fromCharCode(97 + col);
   const rankLabel = (row: number) => String(8 - row);

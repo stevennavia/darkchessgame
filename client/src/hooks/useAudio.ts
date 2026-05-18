@@ -6,7 +6,6 @@ const SOUND_FILES: Record<string, string> = {
   hit: "/assets/audio/hit.mp3",
   sfx1: "/assets/audio/sfx1.mp3",
   firesound: "/assets/audio/firesound.mp3",
-  song: "/assets/audio/song.mp3",
 };
 
 export function useAudio() {
@@ -16,7 +15,7 @@ export function useAudio() {
 
   useEffect(() => {
     if (!musicRef.current) {
-      musicRef.current = new Audio(SOUND_FILES.song);
+      musicRef.current = new Audio(SOUND_FILES.firesound);
       musicRef.current.loop = true;
       musicRef.current.volume = 0.3;
     }

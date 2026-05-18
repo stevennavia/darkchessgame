@@ -13,7 +13,7 @@ import { stockfishEngine, getFallbackAIMove, AIDifficulty } from "@/ai/stockfish
 export function GameCanvas() {
   const {
     selectedSquare, validMoves, myColor, turn, phase,
-    isAIGame, aiDifficulty, isAIThinking,
+    isAIGame, aiDifficulty,
     selectSquare, setValidMoves, applyMove, setGameOver, setAIThinking,
   } = useGameStore();
 
@@ -93,7 +93,7 @@ export function GameCanvas() {
     processingRef.current = true;
     setAIThinking(true);
 
-    await new Promise((r) => setTimeout(r, 300 + Math.random() * 400));
+    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1000));
 
     try {
       const fen = useGameStore.getState().fen;
@@ -224,12 +224,6 @@ export function GameCanvas() {
   return (
     <div className="game-canvas">
       <Board onSquareClick={onSquareClick} bloodSquares={bloodEffects.map((b) => b.square)} />
-      {isAIThinking && (
-        <div className="ai-thinking-overlay">
-          <div className="ai-thinking-text">AI is thinking...</div>
-          <div className="spinner" />
-        </div>
-      )}
     </div>
   );
 }
