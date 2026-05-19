@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 
-export type AIDifficulty = "mortal" | "cursed" | "nightmare";
+export type AIDifficulty = "mortal" | "forsaken" | "nightmare";
 
 interface StockfishConfig {
   skillLevel: number;
@@ -10,7 +10,7 @@ interface StockfishConfig {
 
 const AI_CONFIGS: Record<AIDifficulty, StockfishConfig> = {
   mortal: { skillLevel: 1, elo: 800, name: "Mortal" },
-  cursed: { skillLevel: 8, elo: 1600, name: "Cursed" },
+  forsaken: { skillLevel: 8, elo: 1600, name: "Forsaken" },
   nightmare: { skillLevel: 20, elo: 3190, name: "Nightmare" },
 };
 
@@ -267,7 +267,7 @@ function getBestMove(chess: Chess, depth: number): { from: string; to: string; p
 export function getFallbackAIMove(chess: Chess, difficulty: string): { from: string; to: string; promotion?: string } {
   switch (difficulty) {
     case "mortal": return getRandomMove(chess);
-    case "cursed": return getGreedyMove(chess);
+    case "forsaken": return getGreedyMove(chess);
     case "nightmare": return getBestMove(chess, 3);
     default: return getRandomMove(chess);
   }

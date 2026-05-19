@@ -15,8 +15,6 @@ export function GameCanvas() {
 
   const { playSound } = useAudio();
   const chessRef = useRef<Chess>(new Chess());
-  const [shakeSquare, setShakeSquare] = useState<string | null>(null);
-  const [boardShake, setBoardShake] = useState(false);
   const [wiggleSquares, setWiggleSquares] = useState<string[]>([]);
   const [bloodSquares, setBloodSquares] = useState<string[]>([]);
   const [animatingSquare, setAnimatingSquare] = useState<string | null>(null);
@@ -49,7 +47,7 @@ export function GameCanvas() {
     return unsub;
   }, []);
 
-  const applyAIMove = useCallback((chessMove: any) => {
+  const applyMoveShared = useCallback((chessMove: any) => {
     const moveRecord: MoveRecord = {
       from: chessMove.from, to: chessMove.to, san: chessMove.san,
       fen: chessMove.after, piece: chessMove.piece,
@@ -62,12 +60,8 @@ export function GameCanvas() {
 
     if (chessMove.captured) {
       playSound("hit");
-      setShakeSquare(chessMove.to);
-      setBoardShake(true);
       setWiggleSquares(getAdjacentSquares(chessMove.to));
       setBloodSquares((prev) => [...prev, chessMove.to]);
-      setTimeout(() => setShakeSquare(null), 1000);
-      setTimeout(() => setBoardShake(false), 1000);
       setTimeout(() => setWiggleSquares([]), 600);
       setTimeout(() => setBloodSquares((prev) => prev.filter((s) => s !== chessMove.to)), 800);
     }
@@ -90,6 +84,10 @@ export function GameCanvas() {
       setGameOver(winner, newPhase as any, []);
     }
   }, [playSound]);
+
+  const applyAIMove = useCallback((chessMove: any) => {
+    applyMoveShared(chessMove);
+  }, [applyMoveShared]);
 
   const runAIMove = useCallback(async () => {
     if (processingRef.current) return;
@@ -167,45 +165,7 @@ export function GameCanvas() {
         if (state.isAIGame) {
           try {
             const moveResult = chessRef.current.move({ from: state.selectedSquare, to: square, promotion: "q" });
-            const moveRecord: MoveRecord = {
-              from: moveResult.from, to: moveResult.to, san: moveResult.san,
-              fen: moveResult.after, piece: moveResult.piece,
-              captured: moveResult.captured, timestamp: Date.now(),
-            };
-
-            playSound("sfx1");
-            setAnimatingSquare(moveResult.to);
-            setTimeout(() => setAnimatingSquare(null), 300);
-
-            if (moveResult.captured) {
-              playSound("hit");
-              setShakeSquare(moveResult.to);
-              setBoardShake(true);
-              setWiggleSquares(getAdjacentSquares(moveResult.to));
-              setBloodSquares((prev) => [...prev, moveResult.to]);
-              setTimeout(() => setShakeSquare(null), 1000);
-              setTimeout(() => setBoardShake(false), 1000);
-              setTimeout(() => setWiggleSquares([]), 600);
-              setTimeout(() => setBloodSquares((prev) => prev.filter((s) => s !== moveResult.to)), 800);
-            }
-
-            const nextTurn = chessRef.current.turn() === "w" ? PlayerColor.WHITE : PlayerColor.BLACK;
-            let newPhase: string;
-            if (chessRef.current.isCheckmate()) newPhase = "checkmate";
-            else if (chessRef.current.isStalemate()) newPhase = "stalemate";
-            else if (chessRef.current.isDraw()) newPhase = "draw";
-            else if (chessRef.current.isCheck()) newPhase = "check";
-            else newPhase = "playing";
-
-            const { applyMove, setGameOver } = useGameStore.getState();
-            applyMove(moveRecord, moveResult.after, nextTurn, newPhase as any, chessRef.current.isCheck());
-
-            if (newPhase === "checkmate" || newPhase === "stalemate" || newPhase === "draw") {
-              const winner = newPhase === "checkmate"
-                ? (chessRef.current.turn() === "w" ? PlayerColor.BLACK : PlayerColor.WHITE)
-                : undefined;
-              setGameOver(winner, newPhase as any, []);
-            }
+            applyMoveShared(moveResult);
           } catch (e) {
             return;
           }
@@ -239,8 +199,6 @@ export function GameCanvas() {
     <div className="game-canvas">
       <Board
         onSquareClick={onSquareClick}
-        shakeSquare={shakeSquare}
-        boardShake={boardShake}
         wiggleSquares={wiggleSquares}
         bloodSquares={bloodSquares}
         animatingSquare={animatingSquare}

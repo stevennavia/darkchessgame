@@ -6,11 +6,10 @@ interface PieceProps {
   type: string;
   color: "w" | "b";
   isSelected: boolean;
-  shake?: boolean;
   animate?: boolean;
 }
 
-export function Piece({ type, color, isSelected, shake, animate }: PieceProps) {
+export function Piece({ type, color, isSelected, animate }: PieceProps) {
   const [useFallback, setUseFallback] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -180,10 +179,11 @@ export function Piece({ type, color, isSelected, shake, animate }: PieceProps) {
     ctx.restore();
   }, [type, color, isSelected, useFallback]);
 
-  const className = `chess-piece ${isSelected ? "selected" : ""} ${shake ? "piece-shake" : ""} ${animate ? "piece-pop" : ""}`;
+  const pieceClass = type === "P" ? "p" : type === "N" ? "n" : type === "B" ? "b" : type === "R" ? "r" : type === "Q" ? "q" : "k";
+  const className = `chess-piece piece-${pieceClass} ${isSelected ? "selected" : ""} ${animate ? "piece-pop" : ""}`;
 
   if (useFallback) {
-    return <canvas ref={canvasRef} width={92} height={92} className={className} />;
+    return <canvas ref={canvasRef} width={92} height={92} className={`${className} piece-${pieceClass}`} />;
   }
 
   return (

@@ -8,14 +8,12 @@ import { PlayerColor } from "@/types";
 
 interface BoardProps {
   onSquareClick: (square: string) => void;
-  shakeSquare?: string | null;
-  boardShake?: boolean;
   wiggleSquares?: string[];
   bloodSquares?: string[];
   animatingSquare?: string | null;
 }
 
-export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = [], bloodSquares = [], animatingSquare }: BoardProps) {
+export function Board({ onSquareClick, wiggleSquares = [], bloodSquares = [], animatingSquare }: BoardProps) {
   const { fen, selectedSquare, validMoves, lastMove, turn, myColor, phase, isAIGame, isCheck } = useGameStore();
   const flipped = myColor === PlayerColor.BLACK;
 
@@ -23,8 +21,7 @@ export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = 
 
   const checkSquare = useMemo(() => {
     if (!isCheck) return null;
-    const turnColor = turn === PlayerColor.WHITE ? "w" : "b";
-    return findKingSquare(fen, turnColor);
+    return findKingSquare(fen, turn === PlayerColor.WHITE ? "w" : "b");
   }, [fen, isCheck, turn]);
 
   const canInteract = (phase === "playing" || phase === "check") && !(isAIGame && turn !== myColor);
@@ -52,46 +49,37 @@ export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = 
             <span key={i} className="coord-label rank">{rankLabel(i)}</span>
           ))}
         </div>
-        <div className={`chess-board ${boardShake ? "board-shake" : ""}`}>
+        <div className="chess-board">
           {ranks.map((row) =>
             ranks.map((col) => {
               const file = fileLabel(col);
               const rank = rankLabel(row);
               const square = `${file}${rank}`;
               const isLight = isLightSquare(row, col);
-              const isSelected = selectedSquare === square;
-              const isMoveTarget = validMoves.includes(square);
-              const isLast = lastMove?.from === square || lastMove?.to === square;
-              const isCheckSq = checkSquare === square;
               const piece = pieces.find((p) => p.square === square);
-              const isShaking = shakeSquare === square;
-              const isWiggling = wiggleSquares.includes(square);
-              const hasBlood = bloodSquares.includes(square);
-              const isArriving = animatingSquare === square;
 
               return (
                 <div
                   key={square}
                   className={`square ${isLight ? "light" : "dark"}
-                    ${isSelected ? "selected" : ""}
-                    ${isMoveTarget ? "valid-move" : ""}
-                    ${isLast ? "last-move" : ""}
-                    ${isCheckSq ? "in-check" : ""}
-                    ${isWiggling ? "wiggle" : ""}`}
+                    ${selectedSquare === square ? "selected" : ""}
+                    ${validMoves.includes(square) ? "valid-move" : ""}
+                    ${lastMove?.from === square || lastMove?.to === square ? "last-move" : ""}
+                    ${checkSquare === square ? "in-check" : ""}
+                    ${wiggleSquares.includes(square) ? "wiggle" : ""}`}
                   onClick={() => canInteract && onSquareClick(square)}
                 >
                   {piece && (
                     <Piece
                       type={piece.type}
                       color={piece.color as "w" | "b"}
-                      isSelected={isSelected}
-                      shake={isShaking}
-                      animate={isArriving}
+                      isSelected={selectedSquare === square}
+                      animate={animatingSquare === square}
                     />
                   )}
-                  {isMoveTarget && !piece && <div className="move-indicator" />}
-                  {isMoveTarget && piece && <div className="capture-indicator" />}
-                  {hasBlood && (
+                  {!piece && validMoves.includes(square) && <div className="move-indicator" />}
+                  {piece && validMoves.includes(square) && <div className="capture-indicator" />}
+                  {bloodSquares.includes(square) && (
                     <div className="blood-container-inline">
                       {Array.from({ length: 8 }, (_, bi) => (
                         <div

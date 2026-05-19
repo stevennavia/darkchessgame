@@ -64,7 +64,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   drawOfferedBy: "",
   connectionStatus: "disconnected",
   isAIGame: false,
-      aiDifficulty: "cursed",
+      aiDifficulty: "forsaken",
   isAIThinking: false,
 
   setMyInfo: (id, color, name) => set({ myId: id, myColor: color, playerName: name }),
@@ -125,7 +125,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   setDrawOffer: (show, fromPlayer) => set({ showDrawOffer: show, drawOfferedBy: fromPlayer || "" }),
 
-  setAIGame: (isAI, difficulty) => set({ isAIGame: isAI, aiDifficulty: difficulty || "cursed" }),
+  setAIGame: (isAI, difficulty) => set({ isAIGame: isAI, aiDifficulty: difficulty || "forsaken" }),
 
   setAIThinking: (thinking) => set({ isAIThinking: thinking }),
 
@@ -147,7 +147,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       showDrawOffer: false,
       drawOfferedBy: "",
       isAIGame: false,
-  aiDifficulty: "cursed",
+  aiDifficulty: "forsaken",
       isAIThinking: false,
     }),
 }));
