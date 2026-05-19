@@ -16,7 +16,7 @@ export function Lobby({ onGameStart }: LobbyProps) {
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
-  const [aiDifficulty, setAiDifficulty] = useState("medium");
+  const [aiDifficulty, setAiDifficulty] = useState("cursed");
   const { playSound, toggleMusic, musicEnabled } = useAudio();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -133,9 +133,9 @@ export function Lobby({ onGameStart }: LobbyProps) {
   };
 
   const difficultyOptions = [
-    { value: "easy", label: "🐺 Easy", desc: "For the faint of heart" },
-    { value: "medium", label: "👹 Medium", desc: "A worthy challenge" },
-    { value: "hard", label: "💀 Hard", desc: "Embrace oblivion" },
+    { value: "mortal", label: "💀 Mortal", desc: "For the faint of heart" },
+    { value: "cursed", label: "👹 Cursed", desc: "A worthy challenge" },
+    { value: "nightmare", label: "🔥 Nightmare", desc: "Embrace oblivion" },
   ];
 
   const selectedDiff = difficultyOptions.find((d) => d.value === aiDifficulty) || difficultyOptions[1];

@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { Piece } from "./Piece";
 import { useGameStore } from "@/store/gameStore";
-import { fenToPieces, isLightSquare } from "@/utils/chess";
+import { fenToPieces, isLightSquare, findKingSquare } from "@/utils/chess";
 import { PlayerColor } from "@/types";
 
 interface BoardProps {
@@ -12,13 +12,20 @@ interface BoardProps {
   boardShake?: boolean;
   wiggleSquares?: string[];
   bloodSquares?: string[];
+  animatingSquare?: string | null;
 }
 
-export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = [], bloodSquares = [] }: BoardProps) {
-  const { fen, selectedSquare, validMoves, lastMove, turn, myColor, phase, isAIGame } = useGameStore();
+export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = [], bloodSquares = [], animatingSquare }: BoardProps) {
+  const { fen, selectedSquare, validMoves, lastMove, turn, myColor, phase, isAIGame, isCheck } = useGameStore();
   const flipped = myColor === PlayerColor.BLACK;
 
   const pieces = useMemo(() => fenToPieces(fen), [fen]);
+
+  const checkSquare = useMemo(() => {
+    if (!isCheck) return null;
+    const turnColor = turn === PlayerColor.WHITE ? "w" : "b";
+    return findKingSquare(fen, turnColor);
+  }, [fen, isCheck, turn]);
 
   const canInteract = (phase === "playing" || phase === "check") && !(isAIGame && turn !== myColor);
 
@@ -55,10 +62,12 @@ export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = 
               const isSelected = selectedSquare === square;
               const isMoveTarget = validMoves.includes(square);
               const isLast = lastMove?.from === square || lastMove?.to === square;
+              const isCheckSq = checkSquare === square;
               const piece = pieces.find((p) => p.square === square);
               const isShaking = shakeSquare === square;
               const isWiggling = wiggleSquares.includes(square);
               const hasBlood = bloodSquares.includes(square);
+              const isArriving = animatingSquare === square;
 
               return (
                 <div
@@ -67,6 +76,7 @@ export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = 
                     ${isSelected ? "selected" : ""}
                     ${isMoveTarget ? "valid-move" : ""}
                     ${isLast ? "last-move" : ""}
+                    ${isCheckSq ? "in-check" : ""}
                     ${isWiggling ? "wiggle" : ""}`}
                   onClick={() => canInteract && onSquareClick(square)}
                 >
@@ -76,21 +86,22 @@ export function Board({ onSquareClick, shakeSquare, boardShake, wiggleSquares = 
                       color={piece.color as "w" | "b"}
                       isSelected={isSelected}
                       shake={isShaking}
+                      animate={isArriving}
                     />
                   )}
                   {isMoveTarget && !piece && <div className="move-indicator" />}
                   {isMoveTarget && piece && <div className="capture-indicator" />}
                   {hasBlood && (
                     <div className="blood-container-inline">
-                      {Array.from({ length: 6 }, (_, bi) => (
+                      {Array.from({ length: 8 }, (_, bi) => (
                         <div
                           key={bi}
                           className="blood-drop"
                           style={{
                             left: `${20 + Math.random() * 60}%`,
                             top: `${20 + Math.random() * 60}%`,
-                            width: `${3 + Math.random() * 5}px`,
-                            height: `${3 + Math.random() * 5}px`,
+                            width: `${5 + Math.random() * 8}px`,
+                            height: `${5 + Math.random() * 8}px`,
                             animationDelay: `${Math.random() * 0.15}s`,
                           } as React.CSSProperties}
                         />

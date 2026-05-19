@@ -35,6 +35,22 @@ export function isLightSquare(row: number, col: number): boolean {
   return (row + col) % 2 === 0;
 }
 
+export function findKingSquare(fen: string, color: "w" | "b"): string | null {
+  const board = fen.split(" ")[0];
+  const target = color === "w" ? "K" : "k";
+  let row = 0, col = 0;
+  for (const char of board) {
+    if (char === "/") { row++; col = 0; continue; }
+    const num = parseInt(char);
+    if (!isNaN(num)) { col += num; continue; }
+    if (char === target) {
+      return `${String.fromCharCode(97 + col)}${8 - row}`;
+    }
+    col++;
+  }
+  return null;
+}
+
 export function getAdjacentSquares(square: string): string[] {
   const file = square.charCodeAt(0) - 97;
   const rank = parseInt(square[1]) - 1;

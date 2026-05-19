@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 
-export type AIDifficulty = "easy" | "medium" | "hard";
+export type AIDifficulty = "mortal" | "cursed" | "nightmare";
 
 interface StockfishConfig {
   skillLevel: number;
@@ -9,9 +9,9 @@ interface StockfishConfig {
 }
 
 const AI_CONFIGS: Record<AIDifficulty, StockfishConfig> = {
-  easy: { skillLevel: 1, elo: 800, name: "Easy AI" },
-  medium: { skillLevel: 8, elo: 1600, name: "Medium AI" },
-  hard: { skillLevel: 20, elo: 3190, name: "Hard AI" },
+  mortal: { skillLevel: 1, elo: 800, name: "Mortal" },
+  cursed: { skillLevel: 8, elo: 1600, name: "Cursed" },
+  nightmare: { skillLevel: 20, elo: 3190, name: "Nightmare" },
 };
 
 type MessageCallback = (line: string) => void;
@@ -67,10 +67,15 @@ class StockfishEngine {
     if (this.engine) this.engine.postMessage(cmd);
   }
 
-  private waitFor(expected: string): Promise<void> {
-    return new Promise((resolve) => {
+  private waitFor(expected: string, timeoutMs = 5000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.removeListener(cb);
+        reject(new Error(`Timeout waiting for ${expected}`));
+      }, timeoutMs);
       const cb = (line: string) => {
         if (line === expected) {
+          clearTimeout(timer);
           this.removeListener(cb);
           resolve();
         }
@@ -101,8 +106,15 @@ class StockfishEngine {
     this.sendCommand("go movetime 1500");
 
     return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.removeListener(cb);
+        callback("");
+        resolve();
+      }, 10000);
+
       const cb = (line: string) => {
         if (line.startsWith("bestmove ")) {
+          clearTimeout(timer);
           this.removeListener(cb);
           const parts = line.split(" ");
           const move = parts[1];
@@ -175,15 +187,21 @@ function getVerboseMoves(chess: Chess): any[] {
   return chess.moves({ verbose: true }) as any[];
 }
 
+function cloneChess(chess: Chess): Chess {
+  return new Chess(chess.fen());
+}
+
 function getRandomMove(chess: Chess): { from: string; to: string; promotion?: string } {
-  const moves = getVerboseMoves(chess);
+  const c = cloneChess(chess);
+  const moves = getVerboseMoves(c);
   if (moves.length === 0) throw new Error("No moves available");
   const move = moves[Math.floor(Math.random() * moves.length)];
   return { from: move.from, to: move.to, promotion: move.promotion };
 }
 
 function getGreedyMove(chess: Chess): { from: string; to: string; promotion?: string } {
-  const moves = getVerboseMoves(chess);
+  const c = cloneChess(chess);
+  const moves = getVerboseMoves(c);
   if (moves.length === 0) throw new Error("No moves available");
   let bestMove = moves[0];
   let bestValue = -Infinity;
@@ -228,15 +246,16 @@ function minimax(chess: Chess, depth: number, isMaximizing: boolean, alpha: numb
 }
 
 function getBestMove(chess: Chess, depth: number): { from: string; to: string; promotion?: string } {
-  const moves = getVerboseMoves(chess);
+  const c = cloneChess(chess);
+  const moves = getVerboseMoves(c);
   if (moves.length === 0) throw new Error("No moves available");
-  const isMaximizing = chess.turn() === "w";
+  const isMaximizing = c.turn() === "w";
   let bestMove = moves[0];
   let bestValue = isMaximizing ? -Infinity : Infinity;
   for (const move of moves) {
-    chess.move(move.san);
-    const score = minimax(chess, depth - 1, !isMaximizing, -Infinity, Infinity);
-    chess.undo();
+    c.move(move.san);
+    const score = minimax(c, depth - 1, !isMaximizing, -Infinity, Infinity);
+    c.undo();
     if (isMaximizing ? score > bestValue : score < bestValue) {
       bestValue = score;
       bestMove = move;
@@ -247,9 +266,9 @@ function getBestMove(chess: Chess, depth: number): { from: string; to: string; p
 
 export function getFallbackAIMove(chess: Chess, difficulty: string): { from: string; to: string; promotion?: string } {
   switch (difficulty) {
-    case "easy": return getRandomMove(chess);
-    case "medium": return getGreedyMove(chess);
-    case "hard": return getBestMove(chess, 3);
+    case "mortal": return getRandomMove(chess);
+    case "cursed": return getGreedyMove(chess);
+    case "nightmare": return getBestMove(chess, 3);
     default: return getRandomMove(chess);
   }
 }

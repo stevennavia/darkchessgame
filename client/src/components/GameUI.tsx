@@ -5,11 +5,6 @@ import { useGameStore } from "@/store/gameStore";
 import { multiplayer } from "@/network/multiplayer";
 import { GamePhase, PlayerColor, MoveRecord } from "@/types";
 
-const PIECE_ICONS: Record<string, string> = {
-  p: "♟", n: "♞", b: "♝", r: "♜", q: "♛", k: "♚",
-  P: "♙", N: "♘", B: "♗", R: "♖", Q: "♕", K: "♔",
-};
-
 function formatTime(ms: number): string {
   const totalSec = Math.floor(ms / 1000);
   const min = Math.floor(totalSec / 60);
@@ -17,26 +12,40 @@ function formatTime(ms: number): string {
   return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-function getCaptured(moves: MoveRecord[]): { white: string[]; black: string[] } {
-  const white: string[] = [];
-  const black: string[] = [];
-  for (const m of moves) {
+interface CapturedInfo {
+  type: string;
+  color: "w" | "b";
+}
+
+function getCapturedByMe(moves: MoveRecord[], myColor: PlayerColor): { mine: CapturedInfo[]; theirs: CapturedInfo[] } {
+  const mine: CapturedInfo[] = [];
+  const theirs: CapturedInfo[] = [];
+  for (let i = 0; i < moves.length; i++) {
+    const m = moves[i];
     if (!m.captured) continue;
-    const isWhite = m.captured === m.captured.toUpperCase();
-    if (isWhite) white.push(m.captured.toUpperCase());
-    else black.push(m.captured.toUpperCase());
+    const moveByWhite = i % 2 === 0;
+    const capturedColor = moveByWhite ? "b" : "w";
+    const capturedByMe = myColor === PlayerColor.WHITE ? moveByWhite : !moveByWhite;
+    const info: CapturedInfo = { type: m.captured.toUpperCase(), color: capturedColor };
+    if (capturedByMe) mine.push(info);
+    else theirs.push(info);
   }
-  return { white, black };
+  return { mine, theirs };
 }
 
 const ORDER = ["Q", "R", "B", "N", "P"];
 
-function CapturedDisplay({ pieces }: { pieces: string[] }) {
-  const sorted = [...pieces].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+function CapturedDisplay({ pieces }: { pieces: CapturedInfo[] }) {
+  const sorted = [...pieces].sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type));
   return (
     <div className="captured-row">
       {sorted.map((p, i) => (
-        <span key={i} className="captured-icon">{PIECE_ICONS[p] || "?"}</span>
+        <img
+          key={i}
+          src={`/assets/pieces/${p.color}${p.type}.png`}
+          alt=""
+          className="captured-icon"
+        />
       ))}
     </div>
   );
@@ -86,7 +95,7 @@ export function GameUI({ onBackToMenu }: { onBackToMenu?: () => void }) {
   const handleOfferDraw = () => { multiplayer.offerDraw(); };
   const handleResign = () => { multiplayer.resign(); };
 
-  const captured = getCaptured(moves);
+  const captured = getCapturedByMe(moves, myColor || PlayerColor.WHITE);
   const elapsed = startTime > 0 ? now - startTime : 0;
   const isPlaying = phase === GamePhase.PLAYING || phase === GamePhase.CHECK;
 
@@ -165,21 +174,42 @@ export function GameUI({ onBackToMenu }: { onBackToMenu?: () => void }) {
 
         <div className="lp-divider" />
 
+        <div className="lp-section lp-section-grow">
+          <span className="lp-section-title">History</span>
+          <div className="lp-history">
+            {Array.from({ length: Math.ceil(moves.length / 2) }, (_, i) => {
+              const w = moves[i * 2];
+              const b = moves[i * 2 + 1];
+              return (
+                <div key={i} className="lp-history-row">
+                  <span className="lp-history-num">{i + 1}.</span>
+                  <span className={`lp-history-move ${w && moves.length - 1 === i * 2 ? "last" : ""}`}>{w?.san || ""}</span>
+                  <span className={`lp-history-move ${b && moves.length - 1 === i * 2 + 1 ? "last" : ""}`}>{b?.san || ""}</span>
+                </div>
+              );
+            })}
+            {moves.length === 0 && <span className="lp-empty">—</span>}
+          </div>
+        </div>
+
+        <div className="lp-divider" />
+
         <div className="lp-section">
-          <span className="lp-section-title">Captured</span>
-          {captured.black.length > 0 && (
-            <div className="lp-captured-group">
-              <span className="lp-captured-label">W</span>
-              <CapturedDisplay pieces={captured.black} />
-            </div>
+          <span className="lp-section-title">My Captures</span>
+          {captured.mine.length > 0 ? (
+            <CapturedDisplay pieces={captured.mine} />
+          ) : (
+            <span className="lp-empty">—</span>
           )}
-          {captured.white.length > 0 && (
-            <div className="lp-captured-group">
-              <span className="lp-captured-label">B</span>
-              <CapturedDisplay pieces={captured.white} />
-            </div>
-          )}
-          {captured.white.length === 0 && captured.black.length === 0 && (
+        </div>
+
+        <div className="lp-divider" />
+
+        <div className="lp-section">
+          <span className="lp-section-title">{isAIGame ? "AI Captures" : "Opponent Captures"}</span>
+          {captured.theirs.length > 0 ? (
+            <CapturedDisplay pieces={captured.theirs} />
+          ) : (
             <span className="lp-empty">—</span>
           )}
         </div>

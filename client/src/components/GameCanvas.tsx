@@ -19,6 +19,7 @@ export function GameCanvas() {
   const [boardShake, setBoardShake] = useState(false);
   const [wiggleSquares, setWiggleSquares] = useState<string[]>([]);
   const [bloodSquares, setBloodSquares] = useState<string[]>([]);
+  const [animatingSquare, setAnimatingSquare] = useState<string | null>(null);
   const processingRef = useRef(false);
   const lastMoveCountRef = useRef(-1);
 
@@ -56,6 +57,8 @@ export function GameCanvas() {
     };
 
     playSound("sfx1");
+    setAnimatingSquare(chessMove.to);
+    setTimeout(() => setAnimatingSquare(null), 300);
 
     if (chessMove.captured) {
       playSound("hit");
@@ -91,47 +94,48 @@ export function GameCanvas() {
   const runAIMove = useCallback(async () => {
     if (processingRef.current) return;
     processingRef.current = true;
-
-    await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1000));
-
-    const { fen, aiDifficulty } = useGameStore.getState();
-    let moved = false;
-
     try {
-      await stockfishEngine.getMove(fen, aiDifficulty as AIDifficulty, (bestMove) => {
-        if (moved) return;
-        if (!bestMove) return;
+      await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1000));
+
+      const { fen, aiDifficulty } = useGameStore.getState();
+      let moved = false;
+
+      try {
+        await stockfishEngine.getMove(fen, aiDifficulty as AIDifficulty, (bestMove) => {
+          if (moved) return;
+          if (!bestMove) return;
+          try {
+            const from = bestMove.slice(0, 2);
+            const to = bestMove.slice(2, 4);
+            const promotion = bestMove.length > 4 ? bestMove[4] : undefined;
+            const m = chessRef.current.move({ from, to, promotion });
+            moved = true;
+            applyAIMove(m);
+          } catch {}
+        });
+      } catch {}
+
+      if (!moved) {
         try {
-          const from = bestMove.slice(0, 2);
-          const to = bestMove.slice(2, 4);
-          const promotion = bestMove.length > 4 ? bestMove[4] : undefined;
-          const m = chessRef.current.move({ from, to, promotion });
+          const move = getFallbackAIMove(chessRef.current, aiDifficulty);
+          const m = chessRef.current.move({ from: move.from, to: move.to, promotion: move.promotion || "q" });
           moved = true;
           applyAIMove(m);
         } catch {}
-      });
-    } catch {}
+      }
 
-    if (!moved) {
-      try {
-        const move = getFallbackAIMove(chessRef.current, aiDifficulty);
-        const m = chessRef.current.move({ from: move.from, to: move.to, promotion: move.promotion || "q" });
-        moved = true;
-        applyAIMove(m);
-      } catch {}
+      if (!moved) {
+        try {
+          const moves = chessRef.current.moves();
+          if (moves.length > 0) {
+            const m = chessRef.current.move(moves[Math.floor(Math.random() * moves.length)]);
+            applyAIMove(m);
+          }
+        } catch {}
+      }
+    } finally {
+      processingRef.current = false;
     }
-
-    if (!moved) {
-      try {
-        const moves = chessRef.current.moves();
-        if (moves.length > 0) {
-          const m = chessRef.current.move(moves[Math.floor(Math.random() * moves.length)]);
-          applyAIMove(m);
-        }
-      } catch {}
-    }
-
-    processingRef.current = false;
   }, [applyAIMove]);
 
   const getMovesForSquare = useCallback((sq: string): string[] => {
@@ -170,6 +174,8 @@ export function GameCanvas() {
             };
 
             playSound("sfx1");
+            setAnimatingSquare(moveResult.to);
+            setTimeout(() => setAnimatingSquare(null), 300);
 
             if (moveResult.captured) {
               playSound("hit");
@@ -237,6 +243,7 @@ export function GameCanvas() {
         boardShake={boardShake}
         wiggleSquares={wiggleSquares}
         bloodSquares={bloodSquares}
+        animatingSquare={animatingSquare}
       />
     </div>
   );
