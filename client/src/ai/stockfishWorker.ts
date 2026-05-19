@@ -18,7 +18,6 @@ type MessageCallback = (line: string) => void;
 
 class StockfishEngine {
   private engine: any = null;
-  private ready = false;
   private loaded = false;
   private messageCallback: MessageCallback | null = null;
   private listeners: MessageCallback[] = [];
@@ -26,16 +25,13 @@ class StockfishEngine {
   async init(): Promise<boolean> {
     if (this.loaded) return true;
     try {
-      const resp = await fetch("/stockfish/stockfish.js");
-      const code = await resp.text();
-      const fn = new Function("Stockfish", code);
-      const stockfishFactory = (() => {
-        let Stockfish: any = {};
-        fn(Stockfish);
-        return Stockfish;
-      })();
+      await this.loadScript();
 
-      this.engine = await stockfishFactory.ready;
+      if (typeof (window as any).Stockfish !== "function") {
+        return false;
+      }
+
+      this.engine = await (window as any).Stockfish();
       this.engine.addMessageListener((line: string) => {
         if (this.messageCallback) this.messageCallback(line);
         this.listeners.forEach((cb) => cb(line));
@@ -46,9 +42,25 @@ class StockfishEngine {
       this.loaded = true;
       return true;
     } catch (err) {
-      console.warn("Stockfish failed to load, using fallback AI:", err);
+      console.warn("Stockfish failed to load:", err);
       return false;
     }
+  }
+
+  private loadScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[src="/stockfish/stockfish.js"]');
+      if (existing) {
+        if ((window as any).Stockfish) { resolve(); return; }
+        setTimeout(() => (window as any).Stockfish ? resolve() : reject(new Error("Timeout")), 5000);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "/stockfish/stockfish.js";
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load stockfish.js"));
+      document.head.appendChild(script);
+    });
   }
 
   private sendCommand(cmd: string) {
@@ -111,7 +123,7 @@ class StockfishEngine {
 
 export const stockfishEngine = new StockfishEngine();
 
-/* ===== FALLBACK AI (built-in, no Stockfish needed) ===== */
+/* ===== FALLBACK AI (built-in) ===== */
 
 const PIECE_VALUES: Record<string, number> = {
   p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000,
@@ -144,7 +156,6 @@ function evaluateBoard(chess: Chess): number {
   let score = 0;
   const board = fen.split(" ")[0];
   let col = 0, row = 7;
-
   for (const char of board) {
     if (char === "/") { row--; col = 0; continue; }
     const num = parseInt(char);
@@ -176,7 +187,6 @@ function getGreedyMove(chess: Chess): { from: string; to: string; promotion?: st
   if (moves.length === 0) throw new Error("No moves available");
   let bestMove = moves[0];
   let bestValue = -Infinity;
-
   for (const move of moves) {
     let value = 0;
     if (move.captured) value += getPieceValue(move.captured) + 50;
@@ -223,7 +233,6 @@ function getBestMove(chess: Chess, depth: number): { from: string; to: string; p
   const isMaximizing = chess.turn() === "w";
   let bestMove = moves[0];
   let bestValue = isMaximizing ? -Infinity : Infinity;
-
   for (const move of moves) {
     chess.move(move.san);
     const score = minimax(chess, depth - 1, !isMaximizing, -Infinity, Infinity);

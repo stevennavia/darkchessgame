@@ -95,6 +95,11 @@ export function GameUI({ onBackToMenu }: { onBackToMenu?: () => void }) {
   return (
     <div className="game-ui-overlay">
       <div className="top-bar">
+        <div className="top-left">
+          <button onClick={handleBackToMenu} className="ui-btn back-btn">
+            ◄ Back to Lobby
+          </button>
+        </div>
         <div className="top-right">
           {!isAIGame && multiplayer.getRoomId() && (
             <>
@@ -140,6 +145,27 @@ export function GameUI({ onBackToMenu }: { onBackToMenu?: () => void }) {
         <div className="lp-divider" />
 
         <div className="lp-section">
+          <span className="lp-section-title">Last Move</span>
+          <span className="lp-san">{lastMoveSan || "—"}</span>
+        </div>
+
+        <div className="lp-divider" />
+
+        <div className="lp-section">
+          <span className="lp-section-title">Move</span>
+          <span className="lp-move-num">{Math.ceil(moves.length / 2)}</span>
+        </div>
+
+        <div className="lp-divider" />
+
+        <div className="lp-section">
+          <span className="lp-section-title">Time</span>
+          <span className="lp-timer">{formatTime(elapsed)}</span>
+        </div>
+
+        <div className="lp-divider" />
+
+        <div className="lp-section">
           <span className="lp-section-title">Captured</span>
           {captured.black.length > 0 && (
             <div className="lp-captured-group">
@@ -155,29 +181,6 @@ export function GameUI({ onBackToMenu }: { onBackToMenu?: () => void }) {
           )}
           {captured.white.length === 0 && captured.black.length === 0 && (
             <span className="lp-empty">—</span>
-          )}
-        </div>
-
-        <div className="lp-divider" />
-
-        <div className="lp-section">
-          <span className="lp-section-title">Time</span>
-          <span className="lp-timer">{formatTime(elapsed)}</span>
-        </div>
-      </div>
-
-      <div className="bottom-bar">
-        <div className="bottom-info">
-          {lastMoveSan && <span className="move-san">{lastMoveSan}</span>}
-          {lastMoveSan && <div className="info-sep" />}
-          <span className="move-count">Move {Math.ceil(moves.length / 2)}</span>
-          <div className="info-sep" />
-          <span className="game-timer">{formatTime(elapsed)}</span>
-          {isAIGame && isCheck && isPlaying && (
-            <>
-              <div className="info-sep" />
-              <span className="check-badge">CHECK</span>
-            </>
           )}
         </div>
       </div>

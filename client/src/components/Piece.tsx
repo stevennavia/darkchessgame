@@ -6,9 +6,10 @@ interface PieceProps {
   type: string;
   color: "w" | "b";
   isSelected: boolean;
+  shake?: boolean;
 }
 
-export function Piece({ type, color, isSelected }: PieceProps) {
+export function Piece({ type, color, isSelected, shake }: PieceProps) {
   const [useFallback, setUseFallback] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -178,7 +179,7 @@ export function Piece({ type, color, isSelected }: PieceProps) {
     ctx.restore();
   }, [type, color, isSelected, useFallback]);
 
-  const className = `chess-piece ${isSelected ? "selected" : ""}`;
+  const className = `chess-piece ${isSelected ? "selected" : ""} ${shake ? "piece-shake" : ""}`;
 
   if (useFallback) {
     return <canvas ref={canvasRef} width={92} height={92} className={className} />;

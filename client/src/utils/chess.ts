@@ -34,3 +34,21 @@ export function fenToPieces(fen: string): PiecePosition[] {
 export function isLightSquare(row: number, col: number): boolean {
   return (row + col) % 2 === 0;
 }
+
+export function getAdjacentSquares(square: string): string[] {
+  const file = square.charCodeAt(0) - 97;
+  const rank = parseInt(square[1]) - 1;
+  const result: string[] = [];
+
+  for (let df = -1; df <= 1; df++) {
+    for (let dr = -1; dr <= 1; dr++) {
+      if (df === 0 && dr === 0) continue;
+      const nf = file + df;
+      const nr = rank + dr;
+      if (nf < 0 || nf > 7 || nr < 0 || nr > 7) continue;
+      result.push(`${String.fromCharCode(97 + nf)}${nr + 1}`);
+    }
+  }
+
+  return result;
+}

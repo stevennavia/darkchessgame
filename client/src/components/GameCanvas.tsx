@@ -5,23 +5,22 @@ import { Chess } from "chess.js";
 import { Board } from "./Board";
 import { useGameStore } from "@/store/gameStore";
 import { multiplayer } from "@/network/multiplayer";
-import { fenToPieces } from "@/utils/chess";
+import { fenToPieces, getAdjacentSquares } from "@/utils/chess";
 import { PlayerColor, MoveRecord } from "@/types";
 import { useAudio } from "@/hooks/useAudio";
 import { stockfishEngine, getFallbackAIMove, AIDifficulty } from "@/ai/stockfishWorker";
 
 export function GameCanvas() {
-  const {
-    selectedSquare, validMoves, myColor, turn, phase,
-    isAIGame, aiDifficulty,
-    selectSquare, setValidMoves, applyMove, setGameOver, setAIThinking,
-  } = useGameStore();
+  const { selectSquare, setValidMoves } = useGameStore();
 
   const { playSound } = useAudio();
   const chessRef = useRef<Chess>(new Chess());
-  const [bloodEffects, setBloodEffects] = useState<{ id: number; square: string }[]>([]);
-  const bloodIdRef = useRef(0);
+  const [shakeSquare, setShakeSquare] = useState<string | null>(null);
+  const [boardShake, setBoardShake] = useState(false);
+  const [wiggleSquares, setWiggleSquares] = useState<string[]>([]);
+  const [bloodSquares, setBloodSquares] = useState<string[]>([]);
   const processingRef = useRef(false);
+  const lastMoveCountRef = useRef(-1);
 
   useEffect(() => {
     try { chessRef.current.load(useGameStore.getState().fen); } catch {}
@@ -37,35 +36,37 @@ export function GameCanvas() {
   }, []);
 
   useEffect(() => {
-    if (!isAIGame) return;
-    const state = useGameStore.getState();
-    if (state.turn === state.myColor) return;
-    if (state.phase === "checkmate" || state.phase === "stalemate" || state.phase === "draw") return;
-    triggerAIMove();
-  }, [turn, isAIGame]);
+    const unsub = useGameStore.subscribe((state) => {
+      if (!state.isAIGame) return;
+      if (state.turn === state.myColor) return;
+      if (state.phase === "checkmate" || state.phase === "stalemate" || state.phase === "draw") return;
+      if (lastMoveCountRef.current === state.moves.length) return;
 
-  const getMovesForSquare = useCallback((sq: string): string[] => {
-    try {
-      const moves = chessRef.current.moves({ square: sq as any, verbose: true });
-      return moves.map((m: any) => m.to);
-    } catch { return []; }
+      lastMoveCountRef.current = state.moves.length;
+      runAIMove();
+    });
+    return unsub;
   }, []);
 
   const applyAIMove = useCallback((chessMove: any) => {
     const moveRecord: MoveRecord = {
-      from: chessMove.from,
-      to: chessMove.to,
-      san: chessMove.san,
-      fen: chessMove.after,
-      piece: chessMove.piece,
-      captured: chessMove.captured,
-      timestamp: Date.now(),
+      from: chessMove.from, to: chessMove.to, san: chessMove.san,
+      fen: chessMove.after, piece: chessMove.piece,
+      captured: chessMove.captured, timestamp: Date.now(),
     };
+
+    playSound("sfx1");
 
     if (chessMove.captured) {
       playSound("hit");
-      setBloodEffects((prev) => [...prev, { id: bloodIdRef.current++, square: chessMove.to }]);
-      setTimeout(() => setBloodEffects((prev) => prev.slice(1)), 1000);
+      setShakeSquare(chessMove.to);
+      setBoardShake(true);
+      setWiggleSquares(getAdjacentSquares(chessMove.to));
+      setBloodSquares((prev) => [...prev, chessMove.to]);
+      setTimeout(() => setShakeSquare(null), 1000);
+      setTimeout(() => setBoardShake(false), 1000);
+      setTimeout(() => setWiggleSquares([]), 600);
+      setTimeout(() => setBloodSquares((prev) => prev.filter((s) => s !== chessMove.to)), 800);
     }
 
     const nextTurn = chessRef.current.turn() === "w" ? PlayerColor.WHITE : PlayerColor.BLACK;
@@ -76,6 +77,7 @@ export function GameCanvas() {
     else if (chessRef.current.isCheck()) newPhase = "check";
     else newPhase = "playing";
 
+    const { applyMove, setGameOver } = useGameStore.getState();
     applyMove(moveRecord, chessMove.after, nextTurn, newPhase as any, chessRef.current.isCheck());
 
     if (newPhase === "checkmate" || newPhase === "stalemate" || newPhase === "draw") {
@@ -84,69 +86,66 @@ export function GameCanvas() {
         : undefined;
       setGameOver(winner, newPhase as any, []);
     }
+  }, [playSound]);
 
-    setAIThinking(false);
-    processingRef.current = false;
-  }, [applyMove, setGameOver, setAIThinking, playSound]);
-
-  const triggerAIMove = useCallback(async () => {
+  const runAIMove = useCallback(async () => {
     if (processingRef.current) return;
     processingRef.current = true;
-    setAIThinking(true);
 
     await new Promise((r) => setTimeout(r, 1000 + Math.random() * 1000));
 
+    const { fen, aiDifficulty } = useGameStore.getState();
+    let moved = false;
+
     try {
-      const fen = useGameStore.getState().fen;
-      let moveApplied = false;
-
       await stockfishEngine.getMove(fen, aiDifficulty as AIDifficulty, (bestMove) => {
-        if (moveApplied) return;
-        if (!bestMove) throw new Error("No move from Stockfish");
-
+        if (moved) return;
+        if (!bestMove) return;
         try {
           const from = bestMove.slice(0, 2);
           const to = bestMove.slice(2, 4);
           const promotion = bestMove.length > 4 ? bestMove[4] : undefined;
           const m = chessRef.current.move({ from, to, promotion });
-          moveApplied = true;
+          moved = true;
           applyAIMove(m);
-        } catch {
-          throw new Error("Stockfish move invalid");
-        }
+        } catch {}
       });
+    } catch {}
 
-      if (!moveApplied) throw new Error("Stockfish didn't respond");
-    } catch {
+    if (!moved) {
       try {
         const move = getFallbackAIMove(chessRef.current, aiDifficulty);
-        const m = chessRef.current.move({
-          from: move.from,
-          to: move.to,
-          promotion: move.promotion || "q",
-        });
+        const m = chessRef.current.move({ from: move.from, to: move.to, promotion: move.promotion || "q" });
+        moved = true;
         applyAIMove(m);
-      } catch (e) {
-        console.error("AI completely failed:", e);
-        setAIThinking(false);
-        processingRef.current = false;
+      } catch {}
+    }
 
+    if (!moved) {
+      try {
         const moves = chessRef.current.moves();
         if (moves.length > 0) {
-          try {
-            const m = chessRef.current.move(moves[Math.floor(Math.random() * moves.length)]);
-            applyAIMove(m);
-          } catch {}
+          const m = chessRef.current.move(moves[Math.floor(Math.random() * moves.length)]);
+          applyAIMove(m);
         }
-      }
+      } catch {}
     }
-  }, [aiDifficulty, applyAIMove, setAIThinking]);
+
+    processingRef.current = false;
+  }, [applyAIMove]);
+
+  const getMovesForSquare = useCallback((sq: string): string[] => {
+    try {
+      const moves = chessRef.current.moves({ square: sq as any, verbose: true });
+      return moves.map((m: any) => m.to);
+    } catch { return []; }
+  }, []);
 
   const onSquareClick = useCallback((square: string) => {
     const state = useGameStore.getState();
     if (state.phase === "waiting" || state.phase === "checkmate" ||
         state.phase === "stalemate" || state.phase === "draw" || state.phase === "abandoned") return;
-    if (state.isAIThinking || processingRef.current) return;
+    if (processingRef.current) return;
     if (state.turn !== state.myColor) return;
 
     const pieces = fenToPieces(state.fen);
@@ -155,8 +154,8 @@ export function GameCanvas() {
 
     if (state.selectedSquare) {
       if (square === state.selectedSquare) {
-        selectSquare(null);
-        setValidMoves([]);
+        useGameStore.getState().selectSquare(null);
+        useGameStore.getState().setValidMoves([]);
         return;
       }
 
@@ -170,10 +169,18 @@ export function GameCanvas() {
               captured: moveResult.captured, timestamp: Date.now(),
             };
 
+            playSound("sfx1");
+
             if (moveResult.captured) {
               playSound("hit");
-              setBloodEffects((prev) => [...prev, { id: bloodIdRef.current++, square: moveResult.to }]);
-              setTimeout(() => setBloodEffects((prev) => prev.slice(1)), 1000);
+              setShakeSquare(moveResult.to);
+              setBoardShake(true);
+              setWiggleSquares(getAdjacentSquares(moveResult.to));
+              setBloodSquares((prev) => [...prev, moveResult.to]);
+              setTimeout(() => setShakeSquare(null), 1000);
+              setTimeout(() => setBoardShake(false), 1000);
+              setTimeout(() => setWiggleSquares([]), 600);
+              setTimeout(() => setBloodSquares((prev) => prev.filter((s) => s !== moveResult.to)), 800);
             }
 
             const nextTurn = chessRef.current.turn() === "w" ? PlayerColor.WHITE : PlayerColor.BLACK;
@@ -184,6 +191,7 @@ export function GameCanvas() {
             else if (chessRef.current.isCheck()) newPhase = "check";
             else newPhase = "playing";
 
+            const { applyMove, setGameOver } = useGameStore.getState();
             applyMove(moveRecord, moveResult.after, nextTurn, newPhase as any, chessRef.current.isCheck());
 
             if (newPhase === "checkmate" || newPhase === "stalemate" || newPhase === "draw") {
@@ -199,31 +207,37 @@ export function GameCanvas() {
           multiplayer.sendMove(state.selectedSquare, square);
         }
 
-        selectSquare(null);
-        setValidMoves([]);
+        useGameStore.getState().selectSquare(null);
+        useGameStore.getState().setValidMoves([]);
         return;
       }
 
       if (clickedPiece) {
-        selectSquare(square);
-        setValidMoves(getMovesForSquare(square));
+        useGameStore.getState().selectSquare(square);
+        useGameStore.getState().setValidMoves(getMovesForSquare(square));
         return;
       }
 
-      selectSquare(null);
-      setValidMoves([]);
+      useGameStore.getState().selectSquare(null);
+      useGameStore.getState().setValidMoves([]);
       return;
     }
 
     if (clickedPiece) {
-      selectSquare(square);
-      setValidMoves(getMovesForSquare(square));
+      useGameStore.getState().selectSquare(square);
+      useGameStore.getState().setValidMoves(getMovesForSquare(square));
     }
   }, []);
 
   return (
     <div className="game-canvas">
-      <Board onSquareClick={onSquareClick} bloodSquares={bloodEffects.map((b) => b.square)} />
+      <Board
+        onSquareClick={onSquareClick}
+        shakeSquare={shakeSquare}
+        boardShake={boardShake}
+        wiggleSquares={wiggleSquares}
+        bloodSquares={bloodSquares}
+      />
     </div>
   );
 }
