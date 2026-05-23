@@ -26,10 +26,41 @@ export function Lobby({ onGameStart }: LobbyProps) {
       onPlayerAssigned: (data) => {
         setMyInfo(data.id, data.color, data.name);
       },
-      onGameStart: () => {
+      onGameStart: (data) => {
         setConnectionStatus("connected");
         setIsJoining(false);
+        const myId = useGameStore.getState().myId;
+        const opponent = data.players?.find((p: any) => p.id !== myId);
+        useGameStore.setState({
+          phase: GamePhase.PLAYING,
+          fen: data.fen,
+          turn: data.turn,
+          players: data.players || [],
+          gameStarted: true,
+          moves: [],
+          opponentName: opponent?.name || "Opponent",
+          selectedSquare: null,
+          validMoves: [],
+          lastMove: null,
+          isCheck: false,
+          lastMoveSan: "",
+          isAIGame: false,
+        });
         onGameStart();
+      },
+      onMoveMade: (data) => {
+        const { applyMove } = useGameStore.getState();
+        applyMove(data.move, data.fen, data.turn, data.phase, data.check);
+      },
+      onGameOver: (data) => {
+        const { setGameOver } = useGameStore.getState();
+        setGameOver(data.winner, data.reason, []);
+      },
+      onDrawOffered: (data) => {
+        useGameStore.getState().setDrawOffer(true, data.fromPlayer);
+      },
+      onDrawDeclined: () => {
+        useGameStore.getState().setDrawOffer(false);
       },
       onPlayersUpdate: (data) => {
         if (data.players.length === 2) {
@@ -37,9 +68,33 @@ export function Lobby({ onGameStart }: LobbyProps) {
         }
       },
       onStateUpdate: (state) => {
-        if (state.phase && state.phase !== GamePhase.WAITING) {
+        if (state.phase && state.phase !== GamePhase.WAITING && !useGameStore.getState().gameStarted) {
+          const myId = useGameStore.getState().myId;
+          const opponent = state.players?.find((p: any) => p.id !== myId);
+          useGameStore.setState({
+            phase: state.phase,
+            fen: state.fen,
+            turn: state.turn,
+            moves: state.moves || [],
+            players: state.players || [],
+            opponentName: opponent?.name || "Opponent",
+          });
           onGameStart();
         }
+      },
+      onReconnected: (data) => {
+        const myId = useGameStore.getState().myId;
+        const opponent = data.players?.find((p: any) => p.id !== myId);
+        useGameStore.setState({
+          phase: data.phase,
+          fen: data.fen,
+          turn: data.turn,
+          players: data.players || [],
+          moves: data.moves || [],
+          opponentName: opponent?.name || "Opponent",
+          gameStarted: true,
+          isAIGame: false,
+        });
       },
     });
   }, [onGameStart]);
