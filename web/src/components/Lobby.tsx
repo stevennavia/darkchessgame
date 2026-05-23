@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useGameStore } from "@/store/gameStore";
 import { multiplayer } from "@/network/multiplayer";
+import { WaitingRoom } from "./WaitingRoom";
 import { GamePhase, PlayerColor } from "@/types";
 import { useAudio } from "@/hooks/useAudio";
 
@@ -17,6 +18,7 @@ export function Lobby({ onGameStart }: LobbyProps) {
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [aiDifficulty, setAiDifficulty] = useState("forsaken");
+  const [playerCount, setPlayerCount] = useState(1);
   const { playSound, toggleMusic, musicEnabled } = useAudio();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -63,6 +65,7 @@ export function Lobby({ onGameStart }: LobbyProps) {
         useGameStore.getState().setDrawOffer(false);
       },
       onPlayersUpdate: (data) => {
+        setPlayerCount(data.players.length);
         if (data.players.length === 2) {
           setConnectionStatus("connected");
         }
@@ -187,6 +190,15 @@ export function Lobby({ onGameStart }: LobbyProps) {
     onGameStart();
   };
 
+  const handleCancelWaiting = () => {
+    multiplayer.disconnect();
+    setCurrentRoomId(null);
+    setRoomId("");
+    setIsJoining(false);
+    setConnectionStatus("disconnected");
+    setPlayerCount(1);
+  };
+
   const difficultyOptions = [
     { value: "mortal", label: "💀 Mortal", desc: "For the faint of heart" },
     { value: "forsaken", label: "👹 Forsaken", desc: "A worthy challenge" },
@@ -196,127 +208,129 @@ export function Lobby({ onGameStart }: LobbyProps) {
   const selectedDiff = difficultyOptions.find((d) => d.value === aiDifficulty) || difficultyOptions[1];
 
   return (
-    <div className="lobby-container">
-      <div className="lobby-bg-overlay" />
+    <>
+      {currentRoomId ? (
+        <WaitingRoom
+          roomId={currentRoomId}
+          playerCount={playerCount}
+          onCancel={handleCancelWaiting}
+        />
+      ) : (
+        <div className="lobby-container">
+          <div className="lobby-bg-overlay" />
 
-      <div className="lobby-content">
-        <div className="lobby-logo-wrapper">
-          <img src="/assets/ui/logo.png" alt="Dark Chess" className="lobby-logo" />
-        </div>
-
-        <div className="lobby-card">
-          <div className="input-group">
-            <label>✦ YOUR NAME</label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="Enter your name..."
-              maxLength={20}
-            />
-          </div>
-
-          <div className="section-solo">
-            <div className="section-header">
-              <span className="section-line" />
-              <span className="section-title">SOLO</span>
-              <span className="section-line" />
+          <div className="lobby-content">
+            <div className="lobby-logo-wrapper">
+              <img src="/assets/ui/logo.png" alt="Dark Chess" className="lobby-logo" />
             </div>
 
-            <div className="difficulty-selector" ref={dropdownRef}>
-              <button
-                className="difficulty-trigger"
-                onClick={() => setShowDropdown(!showDropdown)}
-                type="button"
-              >
-                <span className="diff-label">{selectedDiff.label}</span>
-                <span className="diff-arrow">▾</span>
-              </button>
-              {showDropdown && (
-                <div className="difficulty-menu">
-                  {difficultyOptions.map((opt) => (
-                    <button
-                      key={opt.value}
-                      className={`difficulty-option ${opt.value === aiDifficulty ? "selected" : ""}`}
-                      onClick={() => {
-                        setAiDifficulty(opt.value);
-                        setShowDropdown(false);
-                      }}
-                      type="button"
-                    >
-                      <span className="diff-opt-label">{opt.label}</span>
-                      <span className="diff-opt-desc">{opt.desc}</span>
-                    </button>
-                  ))}
+            <div className="lobby-card">
+              <div className="input-group">
+                <label>✦ YOUR NAME</label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Enter your name..."
+                  maxLength={20}
+                />
+              </div>
+
+              <div className="section-solo">
+                <div className="section-header">
+                  <span className="section-line" />
+                  <span className="section-title">SOLO</span>
+                  <span className="section-line" />
                 </div>
+
+                <div className="difficulty-selector" ref={dropdownRef}>
+                  <button
+                    className="difficulty-trigger"
+                    onClick={() => setShowDropdown(!showDropdown)}
+                    type="button"
+                  >
+                    <span className="diff-label">{selectedDiff.label}</span>
+                    <span className="diff-arrow">▾</span>
+                  </button>
+                  {showDropdown && (
+                    <div className="difficulty-menu">
+                      {difficultyOptions.map((opt) => (
+                        <button
+                          key={opt.value}
+                          className={`difficulty-option ${opt.value === aiDifficulty ? "selected" : ""}`}
+                          onClick={() => {
+                            setAiDifficulty(opt.value);
+                            setShowDropdown(false);
+                          }}
+                          type="button"
+                        >
+                          <span className="diff-opt-label">{opt.label}</span>
+                          <span className="diff-opt-desc">{opt.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  className="btn-face-darkness"
+                  onClick={handleAIGame}
+                  disabled={isJoining}
+                >
+                  <span className="btn-fd-border" />
+                  <span className="btn-fd-text">FACE THE DARKNESS</span>
+                  <span className="btn-fd-sub">Enter the cursed ritual</span>
+                </button>
+              </div>
+
+              <div className="section-multiplayer">
+                <div className="section-header">
+                  <span className="section-line gold" />
+                  <span className="section-title gold">⚔ MULTIPLAYER</span>
+                  <span className="section-line gold" />
+                </div>
+
+                <div className="mp-buttons">
+                  <button onClick={handleCreate} disabled={isJoining} className="btn-mp btn-mp-create">
+                    <span className="mp-icon">🏰</span>
+                    <span className="mp-label">Create Room</span>
+                    <span className="mp-desc">Summon a challenger</span>
+                  </button>
+                  <button onClick={handleQuickPlay} disabled={isJoining} className="btn-mp btn-mp-quick">
+                    <span className="mp-icon">⚡</span>
+                    <span className="mp-label">Quick Play</span>
+                    <span className="mp-desc">Find a foe instantly</span>
+                  </button>
+                </div>
+
+                <div className="join-row">
+                  <input
+                    type="text"
+                    value={roomIdInput}
+                    onChange={(e) => setRoomIdInput(e.target.value)}
+                    placeholder="Enter room code..."
+                  />
+                  <button onClick={handleJoin} disabled={isJoining || !roomIdInput.trim()} className="btn-join">
+                    Join
+                  </button>
+                </div>
+              </div>
+
+              {error && <p className="error-text">{error}</p>}
+
+              {connectionStatus === "connecting" && (
+                <div className="loading"><div className="spinner" /></div>
               )}
             </div>
 
-            <button
-              className="btn-face-darkness"
-              onClick={handleAIGame}
-              disabled={isJoining}
-            >
-              <span className="btn-fd-border" />
-              <span className="btn-fd-text">FACE THE DARKNESS</span>
-              <span className="btn-fd-sub">Enter the cursed ritual</span>
-            </button>
-          </div>
-
-          <div className="section-multiplayer">
-            <div className="section-header">
-              <span className="section-line gold" />
-              <span className="section-title gold">⚔ MULTIPLAYER</span>
-              <span className="section-line gold" />
-            </div>
-
-            <div className="mp-buttons">
-              <button onClick={handleCreate} disabled={isJoining} className="btn-mp btn-mp-create">
-                <span className="mp-icon">🏰</span>
-                <span className="mp-label">Create Room</span>
-                <span className="mp-desc">Summon a challenger</span>
-              </button>
-              <button onClick={handleQuickPlay} disabled={isJoining} className="btn-mp btn-mp-quick">
-                <span className="mp-icon">⚡</span>
-                <span className="mp-label">Quick Play</span>
-                <span className="mp-desc">Find a foe instantly</span>
-              </button>
-            </div>
-
-            <div className="join-row">
-              <input
-                type="text"
-                value={roomIdInput}
-                onChange={(e) => setRoomIdInput(e.target.value)}
-                placeholder="Enter room code..."
-              />
-              <button onClick={handleJoin} disabled={isJoining || !roomIdInput.trim()} className="btn-join">
-                Join
+            <div className="lobby-footer">
+              <button className="music-toggle" onClick={toggleMusic}>
+                {musicEnabled ? "♫ Music: On" : "♫ Music: Off"}
               </button>
             </div>
           </div>
-
-          {currentRoomId && (
-            <div className="room-info">
-              <p className="room-label">Room Code</p>
-              <p className="room-code">{currentRoomId}</p>
-              <p className="waiting-text">Waiting for opponent...</p>
-            </div>
-          )}
-
-          {error && <p className="error-text">{error}</p>}
-
-          {connectionStatus === "connecting" && !currentRoomId && (
-            <div className="loading"><div className="spinner" /></div>
-          )}
         </div>
-
-        <div className="lobby-footer">
-          <button className="music-toggle" onClick={toggleMusic}>
-            {musicEnabled ? "♫ Music: On" : "♫ Music: Off"}
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
