@@ -30,19 +30,6 @@ class MultiplayerManager {
 
   async connect(): Promise<void> {
     this.client = new Client(this.endpoint);
-    await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("Connection timeout")), 10000);
-      const ws = new WebSocket(this.endpoint.replace("ws://", "http://").replace("wss://", "https://"));
-      ws.onopen = () => {
-        clearTimeout(timeout);
-        ws.close();
-        resolve();
-      };
-      ws.onerror = () => {
-        clearTimeout(timeout);
-        reject(new Error("Failed to connect"));
-      };
-    });
   }
 
   setHandlers(handlers: MultiplayerHandlers) {

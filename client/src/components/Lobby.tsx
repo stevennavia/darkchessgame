@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useGameStore } from "@/store/gameStore";
-import { multiplayer } from "@/network/multiplayer";
 import { GamePhase, PlayerColor } from "@/types";
 import { useAudio } from "@/hooks/useAudio";
 
@@ -11,38 +10,11 @@ interface LobbyProps {
 }
 
 export function Lobby({ onGameStart }: LobbyProps) {
-  const { setMyInfo, setRoomId, setConnectionStatus, playerName, setPlayerName, connectionStatus } = useGameStore();
-  const [roomIdInput, setRoomIdInput] = useState("");
-  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
+  const { playerName, setPlayerName } = useGameStore();
   const [aiDifficulty, setAiDifficulty] = useState("forsaken");
   const { playSound, toggleMusic, musicEnabled } = useAudio();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [showDropdown, setShowDropdown] = useState(false);
-
-  useEffect(() => {
-    multiplayer.setHandlers({
-      onPlayerAssigned: (data) => {
-        setMyInfo(data.id, data.color, data.name);
-      },
-      onGameStart: () => {
-        setConnectionStatus("connected");
-        setIsJoining(false);
-        onGameStart();
-      },
-      onPlayersUpdate: (data) => {
-        if (data.players.length === 2) {
-          setConnectionStatus("connected");
-        }
-      },
-      onStateUpdate: (state) => {
-        if (state.phase && state.phase !== GamePhase.WAITING) {
-          onGameStart();
-        }
-      },
-    });
-  }, [onGameStart]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -53,55 +25,6 @@ export function Lobby({ onGameStart }: LobbyProps) {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  const handleCreate = async () => {
-    try {
-      setError("");
-      setIsJoining(true);
-      setConnectionStatus("connecting");
-      playSound("sfx1");
-      const roomId = await multiplayer.createRoom(playerName || undefined);
-      setCurrentRoomId(roomId);
-      setRoomId(roomId);
-    } catch (e: any) {
-      setError(e.message || "Failed to create room");
-      setIsJoining(false);
-      setConnectionStatus("disconnected");
-    }
-  };
-
-  const handleJoin = async () => {
-    if (!roomIdInput.trim()) { setError("Enter a room code"); return; }
-    try {
-      setError("");
-      setIsJoining(true);
-      setConnectionStatus("connecting");
-      playSound("sfx1");
-      await multiplayer.joinRoom(roomIdInput.trim(), playerName || undefined);
-      setCurrentRoomId(roomIdInput.trim());
-      setRoomId(roomIdInput.trim());
-    } catch (e: any) {
-      setError(e.message || "Failed to join room");
-      setIsJoining(false);
-      setConnectionStatus("disconnected");
-    }
-  };
-
-  const handleQuickPlay = async () => {
-    try {
-      setError("");
-      setIsJoining(true);
-      setConnectionStatus("connecting");
-      playSound("sfx1");
-      const roomId = await multiplayer.joinOrCreate(playerName || undefined);
-      setCurrentRoomId(roomId);
-      setRoomId(roomId);
-    } catch (e: any) {
-      setError(e.message || "Failed to find or create room");
-      setIsJoining(false);
-      setConnectionStatus("disconnected");
-    }
-  };
 
   const handleAIGame = () => {
     const isPlayerWhite = Math.random() < 0.5;
@@ -200,7 +123,6 @@ export function Lobby({ onGameStart }: LobbyProps) {
             <button
               className="btn-face-darkness"
               onClick={handleAIGame}
-              disabled={isJoining}
             >
               <span className="btn-fd-border" />
               <span className="btn-fd-text">FACE THE DARKNESS</span>
@@ -215,45 +137,11 @@ export function Lobby({ onGameStart }: LobbyProps) {
               <span className="section-line gold" />
             </div>
 
-            <div className="mp-buttons">
-              <button onClick={handleCreate} disabled={isJoining} className="btn-mp btn-mp-create">
-                <span className="mp-icon">🏰</span>
-                <span className="mp-label">Create Room</span>
-                <span className="mp-desc">Summon a challenger</span>
-              </button>
-              <button onClick={handleQuickPlay} disabled={isJoining} className="btn-mp btn-mp-quick">
-                <span className="mp-icon">⚡</span>
-                <span className="mp-label">Quick Play</span>
-                <span className="mp-desc">Find a foe instantly</span>
-              </button>
-            </div>
-
-            <div className="join-row">
-              <input
-                type="text"
-                value={roomIdInput}
-                onChange={(e) => setRoomIdInput(e.target.value)}
-                placeholder="Enter room code..."
-              />
-              <button onClick={handleJoin} disabled={isJoining || !roomIdInput.trim()} className="btn-join">
-                Join
-              </button>
+            <div className="mp-unavailable">
+              <p className="mp-unavailable-text">Multiplayer server offline</p>
+              <p className="mp-unavailable-sub">Play solo while the cursed realm is being summoned</p>
             </div>
           </div>
-
-          {currentRoomId && (
-            <div className="room-info">
-              <p className="room-label">Room Code</p>
-              <p className="room-code">{currentRoomId}</p>
-              <p className="waiting-text">Waiting for opponent...</p>
-            </div>
-          )}
-
-          {error && <p className="error-text">{error}</p>}
-
-          {connectionStatus === "connecting" && !currentRoomId && (
-            <div className="loading"><div className="spinner" /></div>
-          )}
         </div>
 
         <div className="lobby-footer">
