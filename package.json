@@ -1,12 +1,12 @@
 {
-  "name": "dark-chess-server",
+  "name": "dark-chess",
   "version": "1.0.0",
-  "description": "Dark fantasy chess multiplayer server",
-  "main": "dist/index.js",
+  "description": "Dark fantasy chess with Colyseus + Next.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "build": "cd web && npm install && npm run build && cd .. && tsc",
+    "start": "node dist/index.js",
+    "postinstall": "cd web && npm install"
   },
   "dependencies": {
     "@colyseus/arena": "^0.14.22",
@@ -14,7 +14,10 @@
     "colyseus": "^0.14.21",
     "chess.js": "^1.0.0-beta.6",
     "cors": "^2.8.5",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.14",

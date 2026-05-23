@@ -4,45 +4,55 @@
 
 ### Run locally
 ```bash
-# Terminal 1 - server (Colyseus) — at repo root
 npm run dev
-
-# Terminal 2 - client (Next.js)
-cd web && npm run dev
 ```
 
 ### Build
 ```bash
-# Server — at repo root
 npm run build
+```
 
-# Client (Next.js)
-cd web && npm run build
+### Start production
+```bash
+npm start
 ```
 
 ## Architecture
 
 - **web/** - Next.js 14 App Router + TypeScript + Tailwind CSS
-- **src/** (root) - Node.js/Express + Colyseus (WebSocket multiplayer)
+- **src/** (root) - Node.js/Express + Colyseus + Next.js integration
+
+The server programmatically integrates Next.js via `next({ dir: "./web" })`.
+Next.js handles HTTP routes, Colyseus handles WebSocket multiplayer.
+
+## Deploy (Render)
+
+Single Web Service:
+
+| Field | Value |
+|---|---|
+| **Build Command** | `npm install && npm run build` |
+| **Start Command** | `npm start` |
+| **Plan** | Free |
+
+No separate Vercel deployment needed.
 
 ## Key Files
 
-- `src/index.ts` - Server entry point (port 2567)
-- `src/rooms/ChessRoom.ts` - Game room logic with chess.js validation
+- `src/index.ts` - Server entry (Colyseus + Next.js integration)
+- `src/rooms/ChessRoom.ts` - Game room logic
 - `web/src/app/page.tsx` - Home page (Lobby + Game)
-- `web/src/app/game/[roomId]/page.tsx` - Game room page
-- `web/src/components/GameCanvas.tsx` - Game orchestrator (AI + multiplayer)
-- `web/src/components/Board.tsx` - 2D chessboard
-- `web/src/ai/stockfishWorker.ts` - Stockfish WASM + fallback AI
-- `web/src/store/gameStore.ts` - Zustand state
+- `web/src/components/GameCanvas.tsx` - Game orchestrator
+- `web/src/components/Board.tsx` - Chessboard
+- `web/src/network/multiplayer.ts` - Colyseus client
 
 ## AI Difficulty Levels
 
-- **Easy**: Stockfish Skill 1 / UCI_Elo 800 → fallback: random moves
-- **Medium**: Stockfish Skill 8 / UCI_Elo 1600 → fallback: greedy captures
-- **Hard**: Stockfish Skill 20 (full) → fallback: minimax depth 3
+- **Mortal**: Stockfish Skill 1 / random fallback
+- **Forsaken**: Stockfish Skill 8 / greedy captures fallback
+- **Nightmare**: Stockfish Skill 20 / minimax depth 3 fallback
 
 ## Environment
 
-- Client expects `NEXT_PUBLIC_COLYSEUS_ENDPOINT` (defaults to ws://localhost:2567)
-- Server listens on `PORT` (defaults to 2567)
+- Server listens on `PORT` (default 2567)
+- Client connects to the same origin (no separate env var needed)
