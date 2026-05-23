@@ -8,10 +8,28 @@ import { monitor } from "@colyseus/monitor";
 const port = Number(process.env.PORT) || 2567;
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
 const httpServer = createServer(app);
+
+const corsHandler = cors({
+  origin: true,
+  credentials: true,
+});
+
+app.use(corsHandler);
+
+httpServer.on("request", (req, res) => {
+  if (req.url?.startsWith("/matchmake/")) {
+    corsHandler(req, res, () => {
+      if (req.method === "OPTIONS") {
+        res.writeHead(204);
+        res.end();
+      }
+    });
+  }
+});
+
 const gameServer = new Server({
   server: httpServer,
 });
