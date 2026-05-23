@@ -22,14 +22,19 @@ class MultiplayerManager {
   private client: Client | null = null;
   private room: Room | null = null;
   private handlers: MultiplayerHandlers = {};
-  private endpoint: string;
 
-  constructor() {
-    this.endpoint = process.env.NEXT_PUBLIC_COLYSEUS_ENDPOINT || "ws://localhost:2567";
+  private getEndpoint(): string {
+    if (process.env.NEXT_PUBLIC_COLYSEUS_ENDPOINT) {
+      return process.env.NEXT_PUBLIC_COLYSEUS_ENDPOINT;
+    }
+    if (typeof window !== "undefined") {
+      return window.location.origin;
+    }
+    return "ws://localhost:2567";
   }
 
   async connect(): Promise<void> {
-    this.client = new Client(this.endpoint);
+    this.client = new Client(this.getEndpoint());
   }
 
   setHandlers(handlers: MultiplayerHandlers) {
