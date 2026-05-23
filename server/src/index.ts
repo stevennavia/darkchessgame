@@ -18,6 +18,8 @@ const gameServer = new Server({
 
 gameServer.define("chess_room", ChessRoom);
 
+app.get("/", (_req, res) => res.send("Dark Chess server running"));
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/colyseus", monitor());
 
 gameServer.listen(port);
