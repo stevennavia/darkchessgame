@@ -7,8 +7,8 @@
 # Terminal 1 - server (Colyseus)
 cd server && npm run dev
 
-# Terminal 2 - client (Next.js)
-cd client && npm run dev
+# Terminal 2 - client (Next.js) — now at repo root
+npm run dev
 ```
 
 ### Build
@@ -16,8 +16,8 @@ cd client && npm run dev
 # Server
 cd server && npm run build
 
-# Client
-cd client && npm run build
+# Client (Next.js) — now at repo root
+npm run build
 ```
 
 ## Architecture
